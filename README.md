@@ -26,22 +26,91 @@
   中英文双语自由切换
 
 ## 🖥️ 快速开始
+### 1. 安装必要依赖
+#### 安装 socat
+根据操作系统选择以下命令：
+
+```bash
+# CentOS/RHEL
+sudo yum install -y socat
+
+# Ubuntu/Debian
+sudo apt-get update && sudo apt-get install -y socat
+
+# Alpine Linux
+sudo apk add socat
+```
+
+#### 验证安装
+```bash
+socat -V
+# 应显示类似 socat version 1.7.4.0 的信息
+```
+
+### 2. 使用工具
+#### 在线使用
+直接访问 [在线工具页面](http://cs-ipv6-nat-toolkit.github.pcbbs.net/)
+
+#### 本地使用
 ```bash
 git clone https://github.com/k08255-lxm/cs-ipv6-nat-toolkit.git
 cd cs-ipv6-nat-toolkit
-# 使用浏览器打开 index.html
+# 用浏览器打开 index.html
+```
+
+### 3. 运行转发命令
+示例命令（替换为工具生成的端口）：
+```bash
+# TCP转发示例
+socat TCP4-LISTEN:10000,reuseaddr,fork TCP6:[2a00:f48:1000:416::11]:10000
+
+# UDP转发示例
+socat UDP4-LISTEN:13000,reuseaddr,fork UDP6:[2a00:f48:1000:416::11]:13000
+```
+
+### 4. 持久化配置（推荐）
+```bash
+# 创建systemd服务文件
+sudo tee /etc/systemd/system/socat-10000.service <<EOF
+[Unit]
+Description=Socat Port Forwarding (TCP 10000)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/socat TCP4-LISTEN:10000,reuseaddr,fork TCP6:[2a00:f48:1000:416::11]:10000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 启用服务
+sudo systemctl enable socat-10000
+sudo systemctl start socat-10000
+```
+
+### 5. 防火墙配置
+```bash
+# 开放TCP端口
+sudo ufw allow 10000/tcp
+
+# 开放UDP端口
+sudo ufw allow 13000/udp
+
+# 查看规则
+sudo ufw status
 ```
 
 ## 📖 详细使用指南
 ### 步骤1：输入IPv6地址
-支持完整格式或简写格式：
+支持格式：
 - 完整格式：`2a00:f48:1000:416:0000:0000:0000:5401`
 - 简写格式：`2a00:f48:1000:416::5401`
 
 ### 步骤2：选择服务器
 | 选项 | 说明 |
 |------|------|
-| Delta1 Frankfurt | 自动填充预设NAT IP |
+| Delta1 Frankfurt | 自动填充预设NAT IP (62.113.198.26) |
 | 自定义服务器 | 手动输入其他NAT IP |
 
 ### 步骤3：获取配置
@@ -51,11 +120,32 @@ cd cs-ipv6-nat-toolkit
 TCP: 225040-225049
 UDP: 121800-121804
 
-# 示例命令（自动填充实际端口）
+# 示例命令（自动填充）
 socat TCP4-LISTEN:225040,reuseaddr,fork TCP6:[2a00:f48:1000:416::5401]:225040
 
-# 持久化服务配置
+# 持久化配置命令
 sudo systemctl enable socat-225040
+```
+
+## 🛠️ 故障排查
+### 常见问题
+#### "socat: command not found"
+- 确认已正确安装socat
+- 重新运行安装命令
+
+#### "Address already in use"
+```bash
+# 查找占用进程
+sudo lsof -i :10000
+
+# 终止进程
+sudo kill -9 <PID>
+```
+
+#### "Permission denied"
+- 使用root权限运行命令
+```bash
+sudo socat ...
 ```
 
 ## 🛠️ 开发者指南
