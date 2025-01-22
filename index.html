@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-SERVERS服务器IPV6获取工具</title>
+    <style>
+        :root { --primary: #007bff; --hover: #0056b3; }
+        body { font-family: "Microsoft YaHei", Arial, sans-serif; margin: 20px; background: #f0f2f5; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .lang-switch { float: right; }
+        .input-group { margin-bottom: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input, select { 
+            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; 
+            margin-top: 5px; box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px; background: var(--primary); color: white;
+            border: none; border-radius: 4px; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background: var(--hover); }
+        .result-box { 
+            margin-top: 20px; padding: 20px; background: white;
+            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .code-block {
+            background: #1e1e1e; color: #d4d4d4; padding: 15px;
+            border-radius: 4px; margin: 10px 0; position: relative;
+            font-family: 'Courier New', monospace;
+        }
+        .copy-btn {
+            position: absolute; top: 5px; right: 5px;
+            padding: 5px 10px; background: #333; border: none;
+            color: white; cursor: pointer; border-radius: 3px;
+        }
+        h2 { color: #2c3e50; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .server-option { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="lang-switch">
+            <button onclick="changeLanguage('zh')">中文</button>
+            <button onclick="changeLanguage('en')">English</button>
+        </div>
+
+        <h2 data-translate="title">C-SERVERS服务器IPV6获取工具</h2>
+        
+        <div class="input-group">
+            <label data-translate="ipv6Label">你的IPv6地址:</label>
+            <input type="text" id="ipv6" placeholder="例如: 2a00:f418::1000:4116:3401">
+        </div>
+
+        <div class="input-group">
+            <label data-translate="serverLabel">选择服务器:</label>
+            <select id="server-select" onchange="updateNatIP()">
+                <option value="delta1-frankfurt">
+                    Delta1 Frankfurt server
+                    <span class="server-option" data-translate="serverTip">（博主同款便宜预售鸡）</span>
+                </option>
+                <option value="custom" data-translate="customServer">自定义填写</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label data-translate="natLabel">NAT IPv4地址:</label>
+            <input type="text" id="nat-ip" value="62.113.198.26">
+        </div>
+
+        <button onclick="calculate()" data-translate="calculateBtn">立即生成配置</button>
+
+        <div id="result" class="result-box"></div>
+    </div>
+
+    <script>
+        // 多语言配置
+        const translations = {
+            'zh': {
+                'title': 'C-SERVERS服务器IPV6获取工具',
+                'ipv6Label': '你的IPv6地址:',
+                'serverLabel': '选择服务器:',
+                'serverTip': '（博主同款便宜预售鸡）',
+                'natLabel': 'NAT IPv4地址:',
+                'calculateBtn': '立即生成配置',
+                'tcpRange': 'TCP 端口范围:',
+                'udpRange': 'UDP 端口范围:',
+                'socatTitle': 'SOCAT 端口转发命令',
+                'usageTitle': '使用说明',
+                'usage1': '客户端连接地址:',
+                'usage2': '需要 root 权限执行命令',
+                'customServer': '自定义填写'
+            },
+            'en': {
+                'title': 'C-SERVERS IPv6 Toolkit',
+                'ipv6Label': 'Your IPv6 Address:',
+                'serverLabel': 'Select Server:',
+                'serverTip': '(Budget Pre-sale Special)',
+                'natLabel': 'NAT IPv4 Address:',
+                'calculateBtn': 'Generate Config Now',
+                'tcpRange': 'TCP Port Range:',
+                'udpRange': 'UDP Port Range:',
+                'socatTitle': 'SOCAT Port Forwarding Commands',
+                'usageTitle': 'Usage Guide',
+                'usage1': 'Client Connection Address:',
+                'usage2': 'Requires root privileges',
+                'customServer': 'Custom Server'
+            }
+        };
+
+        // 初始化中文界面
+        let currentLang = 'zh';
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            // 更新所有翻译元素
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+            // 特殊处理服务器选项提示
+            document.querySelectorAll('.server-option').forEach(el => {
+                el.textContent = translations[lang]['serverTip'];
+            });
+        }
+
+        function updateNatIP() {
+            const server = document.getElementById('server-select').value;
+            if (server === 'delta1-frankfurt') {
+                document.getElementById('nat-ip').value = '62.113.198.26';
+            } else {
+                document.getElementById('nat-ip').value = '';
+            }
+        }
+
+        function calculate() {
+            const ipv6 = document.getElementById('ipv6').value.trim();
+            const natIP = document.getElementById('nat-ip').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            try {
+                // IPv6地址验证和解析
+                let segments = ipv6.replace(/::/g, ":zero:").split(':');
+                const zeroIndex = segments.findIndex(s => s === "zero");
+                
+                // 处理简写格式
+                if (zeroIndex !== -1) {
+                    const missing = 8 - segments.length + 1;
+                    segments.splice(zeroIndex, 1, ...Array(missing).fill("0000"));
+                }
+
+                // 标准化处理
+                segments = segments.map(s => s.padStart(4, '0').substr(-4));
+                if (segments.length !== 8 || segments.some(s => !/^[0-9a-f]{4}$/i.test(s))) {
+                    throw new Error('Invalid IPv6');
+                }
+
+                // 计算端口范围
+                const lastSegment = segments[7];
+                const decimalValue = parseInt(lastSegment, 16);
+                const tcpStart = 10000 + decimalValue * 10 - 10;
+                const udpStart = 13000 + decimalValue * 5 - 5;
+
+                // 生成专业命令模板
+                const commands = [
+                    `# ${currentLang === 'zh' ? 'TCP端口转发（IPv4 -> IPv6）' : 'TCP Port Forwarding (IPv4 -> IPv6)'}`,
+                    `socat TCP4-LISTEN:${tcpStart},reuseaddr,fork TCP6:[${ipv6}]:${tcpStart}`,
+                    '',
+                    `# ${currentLang === 'zh' ? 'UDP端口转发（IPv4 -> IPv6）' : 'UDP Port Forwarding (IPv4 -> IPv6)'}`,
+                    `socat UDP4-LISTEN:${udpStart},reuseaddr,fork UDP6:[${ipv6}]:${udpStart}`,
+                    '',
+                    `# ${currentLang === 'zh' ? '持久化服务配置' : 'Persistence Service Setup'}`,
+                    `echo "[Unit]\\nDescription=Port Forwarding ${tcpStart}\\nAfter=network.target\\n\\n[Service]\\nExecStart=/usr/bin/socat TCP4-LISTEN:${tcpStart},reuseaddr,fork TCP6:[${ipv6}]:${tcpStart}\\nRestart=always\\n\\n[Install]\\nWantedBy=multi-user.target" | sudo tee /etc/systemd/system/socat-${tcpStart}.service`,
+                    `sudo systemctl enable socat-${tcpStart} && sudo systemctl start socat-${tcpStart}`
+                ].join('\n');
+
+                // 构建结果输出
+                resultDiv.innerHTML = `
+                    <h3>${translations[currentLang]['tcpRange']} <strong class="highlight">${tcpStart}-${tcpStart + 9}</strong></h3>
+                    <h3>${translations[currentLang]['udpRange']} <strong class="highlight">${udpStart}-${udpStart + 4}</strong></h3>
+
+                    <h3>${translations[currentLang]['socatTitle']}</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">${currentLang === 'zh' ? '复制' : 'Copy'}</button>
+                        <pre>${commands}</pre>
+                    </div>
+
+                    <h3>${translations[currentLang]['usageTitle']}</h3>
+                    <ul>
+                        <li>${translations[currentLang]['usage1']} <code class="nat-ip">${natIP}:${tcpStart}</code></li>
+                        <li>${translations[currentLang]['usage2']}</li>
+                        <li>${currentLang === 'zh' ? '推荐开启防火墙端口：' : 'Recommended firewall rules:'} 
+                            <code>ufw allow ${tcpStart}/tcp</code> 
+                            <code>ufw allow ${udpStart}/udp</code>
+                        </li>
+                    </ul>
+                `;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color:red;padding:10px;border-radius:4px;background:#ffe5e5;">
+                    ${currentLang === 'zh' ? '⚠️ 错误: 请输入有效的IPv6地址' : '⚠️ Error: Please enter valid IPv6 address'}
+                </div>`;
+            }
+        }
+
+        function copyCode(button) {
+            const code = button.parentNode.querySelector('pre').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                button.textContent = currentLang === 'zh' ? '已复制!' : 'Copied!';
+                setTimeout(() => button.textContent = currentLang === 'zh' ? '复制' : 'Copy', 2000);
+            });
+        }
+
+        // 初始化配置
+        changeLanguage('zh');
+    </script>
+</body>
+</html>
