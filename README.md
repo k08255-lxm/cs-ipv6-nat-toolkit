@@ -8,6 +8,9 @@
 
 [English Version](README_en.md) | 中文版
 
+## 🚀 在线访问
+👉 **[点击这里立即使用](http://cs-ipv6-nat-toolkit.github.pcbbs.net/)** 👈
+
 ## 🚀 功能特性
 - **智能端口计算引擎**  
   基于IPv6地址末段十六进制值自动计算TCP/UDP端口范围
@@ -84,4 +87,3 @@ MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
 
 ## 🖼️ 界面预览
 ![工具界面](docs/preview.png)
-
