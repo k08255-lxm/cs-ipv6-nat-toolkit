@@ -3,69 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C-SERVERS服务器IPV6获取工具</title>
+    <title>C-SERVERS IPv6 NAT 工具包</title>
     <style>
-        :root { --primary: #007bff; --hover: #0056b3; }
-        body { font-family: "Microsoft YaHei", Arial, sans-serif; margin: 20px; background: #f0f2f5; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .lang-switch { float: right; }
-        .input-group { margin-bottom: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        :root { 
+            --primary: #007bff; 
+            --hover: #0056b3;
+            --code-bg: #1e1e1e;
+            --code-text: #d4d4d4;
+            --border-color: #e0e0e0;
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f0f2f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+        }
+        .lang-switch { 
+            float: right; 
+        }
+        .input-group { 
+            margin-bottom: 15px; 
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #333; 
+        }
         input, select { 
-            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; 
-            margin-top: 5px; box-sizing: border-box;
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 4px; 
+            margin-top: 5px; 
+            box-sizing: border-box;
         }
         button {
-            padding: 10px 20px; background: var(--primary); color: white;
-            border: none; border-radius: 4px; cursor: pointer; transition: 0.3s;
+            padding: 10px 20px; 
+            background: var(--primary); 
+            color: white;
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: 0.3s;
         }
-        button:hover { background: var(--hover); }
+        button:hover { 
+            background: var(--hover); 
+        }
         .result-box { 
-            margin-top: 20px; padding: 20px; background: white;
-            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px; 
+            padding: 20px; 
+            background: white;
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .code-block {
-            background: #1e1e1e; color: #d4d4d4; padding: 15px;
-            border-radius: 4px; margin: 10px 0; position: relative;
-            font-family: 'Courier New', monospace;
+        .code-block, .dynamic-command {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            position: relative;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid #2d2d2d;
         }
         .copy-btn {
-            position: absolute; top: 5px; right: 5px;
-            padding: 5px 10px; background: #333; border: none;
-            color: white; cursor: pointer; border-radius: 3px;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 5px 12px;
+            background: #444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
         }
-        h2 { color: #2c3e50; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
-        .server-option { color: #666; font-size: 0.9em; }
+        .copy-btn:hover {
+            background: #555;
+        }
+        .install-guide {
+            background: #f8f9fa;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        .custom-config {
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+        .protocol-select {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .protocol-select label {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 25px;
+            cursor: pointer;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .protocol-select label:hover {
+            background: #e9ecef;
+        }
+        .protocol-select input[type="radio"] {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+        }
+        .port-config {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .port-input {
+            position: relative;
+        }
+        .port-range-hint {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        .error-msg {
+            color: #dc3545;
+            margin: 5px 0;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 调试模式开关 -->
         <div class="lang-switch">
+            <label style="margin-right:15px;">
+                <input type="checkbox" id="debugMode"> 调试模式
+            </label>
             <button onclick="changeLanguage('zh')">中文</button>
             <button onclick="changeLanguage('en')">English</button>
         </div>
 
-        <h2 data-translate="title">C-SERVERS服务器IPV6获取工具</h2>
+        <h2 data-translate="title">C-SERVERS IPv6 NAT 工具包</h2>
         
         <div class="input-group">
-            <label data-translate="ipv6Label">你的IPv6地址:</label>
+            <label for="ipv6" data-translate="ipv6Label">你的IPv6地址:</label>
             <input type="text" id="ipv6" placeholder="例如: 2a00:f418::1000:4116:3401">
         </div>
 
         <div class="input-group">
-            <label data-translate="serverLabel">选择服务器:</label>
+            <label for="server-select" data-translate="serverLabel">选择服务器:</label>
             <select id="server-select" onchange="updateNatIP()">
-                <option value="delta1-frankfurt">
-                    Delta1 Frankfurt server
-                    <span class="server-option" data-translate="serverTip">（博主同款便宜预售鸡）</span>
-                </option>
-                <option value="custom" data-translate="customServer">自定义填写</option>
+                <option value="delta1-frankfurt">Delta1 Frankfurt server</option>
+                <option value="custom" data-translate="customServer">自定义配置</option>
             </select>
         </div>
 
         <div class="input-group">
-            <label data-translate="natLabel">NAT IPv4地址:</label>
-            <input type="text" id="nat-ip" value="62.113.198.26">
+            <label for="nat-ip" data-translate="natLabel">NAT IPv4地址:</label>
+            <input type="text" id="nat-ip" value="62.113.198.26" placeholder="例如: 192.168.1.1">
         </div>
 
         <button onclick="calculate()" data-translate="calculateBtn">立即生成配置</button>
@@ -74,146 +185,282 @@
     </div>
 
     <script>
-        // 多语言配置
+        // 调试模式控制
+        let debugMode = false;
+        document.getElementById('debugMode').addEventListener('change', (e) => {
+            debugMode = e.target.checked;
+            console.log(`调试模式 ${debugMode ? '已启用' : '已禁用'}`);
+        });
+
+        // 翻译配置
         const translations = {
             'zh': {
-                'title': 'C-SERVERS服务器IPV6获取工具',
+                'title': 'C-SERVERS IPv6 NAT 工具包',
                 'ipv6Label': '你的IPv6地址:',
                 'serverLabel': '选择服务器:',
-                'serverTip': '（博主同款便宜预售鸡）',
                 'natLabel': 'NAT IPv4地址:',
                 'calculateBtn': '立即生成配置',
+                'installTitle': '📦 依赖安装指南',
+                'installCmd': '安装 socat',
                 'tcpRange': 'TCP 端口范围:',
                 'udpRange': 'UDP 端口范围:',
-                'socatTitle': 'SOCAT 端口转发命令',
-                'usageTitle': '使用说明',
-                'usage1': '客户端连接地址:',
-                'usage2': '需要 root 权限执行命令',
-                'customServer': '自定义填写'
+                'customConfig': '🔧 自定义端口映射',
+                'selectProto': '选择协议:',
+                'localPort': '本地端口 (1-65535)',
+                'externalPort': '外部端口',
+                'copyCmd': '复制命令',
+                'invalidPort': '⚠️ 端口无效: ',
+                'validRange': '有效范围: ',
+                'tcpRangeLabel': 'TCP 范围',
+                'udpRangeLabel': 'UDP 范围',
+                'customServer': '自定义配置',
+                'debugMode': '调试模式'
             },
             'en': {
                 'title': 'C-SERVERS IPv6 Toolkit',
                 'ipv6Label': 'Your IPv6 Address:',
                 'serverLabel': 'Select Server:',
-                'serverTip': '(Budget Pre-sale Special)',
                 'natLabel': 'NAT IPv4 Address:',
-                'calculateBtn': 'Generate Config Now',
+                'calculateBtn': 'Generate Config',
+                'installTitle': '📦 Dependency Installation',
+                'installCmd': 'Install socat',
                 'tcpRange': 'TCP Port Range:',
                 'udpRange': 'UDP Port Range:',
-                'socatTitle': 'SOCAT Port Forwarding Commands',
-                'usageTitle': 'Usage Guide',
-                'usage1': 'Client Connection Address:',
-                'usage2': 'Requires root privileges',
-                'customServer': 'Custom Server'
+                'customConfig': '🔧 Custom Port Mapping',
+                'selectProto': 'Select Protocol:',
+                'localPort': 'Local Port (1-65535)',
+                'externalPort': 'External Port',
+                'copyCmd': 'Copy Command',
+                'invalidPort': '⚠️ Invalid port: ',
+                'validRange': 'Valid range: ',
+                'tcpRangeLabel': 'TCP Range',
+                'udpRangeLabel': 'UDP Range',
+                'customServer': 'Custom Setup',
+                'debugMode': 'Debug Mode'
             }
         };
 
-        // 初始化中文界面
         let currentLang = 'zh';
+        let currentRanges = { tcp: null, udp: null };
 
         function changeLanguage(lang) {
             currentLang = lang;
-            // 更新所有翻译元素
             document.querySelectorAll('[data-translate]').forEach(el => {
                 const key = el.getAttribute('data-translate');
-                if (translations[lang][key]) {
-                    el.textContent = translations[lang][key];
-                }
+                el.textContent = translations[lang][key];
             });
-            // 特殊处理服务器选项提示
-            document.querySelectorAll('.server-option').forEach(el => {
-                el.textContent = translations[lang]['serverTip'];
-            });
+            if(currentRanges.tcp) updatePortUI();
         }
 
         function updateNatIP() {
             const server = document.getElementById('server-select').value;
-            if (server === 'delta1-frankfurt') {
-                document.getElementById('nat-ip').value = '62.113.198.26';
-            } else {
-                document.getElementById('nat-ip').value = '';
-            }
+            document.getElementById('nat-ip').value = server === 'delta1-frankfurt' 
+                ? '62.113.198.26' 
+                : '';
+            if(debugMode) console.log('更新NAT IP:', document.getElementById('nat-ip').value);
         }
 
         function calculate() {
+            if(debugMode) console.log('开始计算端口...');
+            
             const ipv6 = document.getElementById('ipv6').value.trim();
-            const natIP = document.getElementById('nat-ip').value.trim();
             const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
 
             try {
-                // IPv6地址验证和解析
+                // IPv6解析逻辑
                 let segments = ipv6.replace(/::/g, ":zero:").split(':');
                 const zeroIndex = segments.findIndex(s => s === "zero");
                 
-                // 处理简写格式
                 if (zeroIndex !== -1) {
                     const missing = 8 - segments.length + 1;
                     segments.splice(zeroIndex, 1, ...Array(missing).fill("0000"));
                 }
 
-                // 标准化处理
                 segments = segments.map(s => s.padStart(4, '0').substr(-4));
                 if (segments.length !== 8 || segments.some(s => !/^[0-9a-f]{4}$/i.test(s))) {
                     throw new Error('Invalid IPv6');
                 }
 
-                // 计算端口范围
                 const lastSegment = segments[7];
                 const decimalValue = parseInt(lastSegment, 16);
-                const tcpStart = 10000 + decimalValue * 10 - 10;
-                const udpStart = 13000 + decimalValue * 5 - 5;
+                
+                // 计算端口范围
+                currentRanges = {
+                    tcp: {
+                        min: 10000 + decimalValue * 10 - 10,
+                        max: 10000 + decimalValue * 10 - 1
+                    },
+                    udp: {
+                        min: 13000 + decimalValue * 5 - 5,
+                        max: 13000 + decimalValue * 5 - 1
+                    }
+                };
 
-                // 生成专业命令模板
-                const commands = [
-                    `# ${currentLang === 'zh' ? 'TCP端口转发（IPv4 -> IPv6）' : 'TCP Port Forwarding (IPv4 -> IPv6)'}`,
-                    `socat TCP4-LISTEN:${tcpStart},reuseaddr,fork TCP6:[${ipv6}]:${tcpStart}`,
-                    '',
-                    `# ${currentLang === 'zh' ? 'UDP端口转发（IPv4 -> IPv6）' : 'UDP Port Forwarding (IPv4 -> IPv6)'}`,
-                    `socat UDP4-LISTEN:${udpStart},reuseaddr,fork UDP6:[${ipv6}]:${udpStart}`,
-                    '',
-                    `# ${currentLang === 'zh' ? '持久化服务配置' : 'Persistence Service Setup'}`,
-                    `echo "[Unit]\\nDescription=Port Forwarding ${tcpStart}\\nAfter=network.target\\n\\n[Service]\\nExecStart=/usr/bin/socat TCP4-LISTEN:${tcpStart},reuseaddr,fork TCP6:[${ipv6}]:${tcpStart}\\nRestart=always\\n\\n[Install]\\nWantedBy=multi-user.target" | sudo tee /etc/systemd/system/socat-${tcpStart}.service`,
-                    `sudo systemctl enable socat-${tcpStart} && sudo systemctl start socat-${tcpStart}`
-                ].join('\n');
+                if(debugMode){
+                    console.log('解析后的IPv6段:', segments);
+                    console.log('TCP范围:', currentRanges.tcp);
+                    console.log('UDP范围:', currentRanges.udp);
+                }
 
-                // 构建结果输出
+                // 生成界面
                 resultDiv.innerHTML = `
-                    <h3>${translations[currentLang]['tcpRange']} <strong class="highlight">${tcpStart}-${tcpStart + 9}</strong></h3>
-                    <h3>${translations[currentLang]['udpRange']} <strong class="highlight">${udpStart}-${udpStart + 4}</strong></h3>
-
-                    <h3>${translations[currentLang]['socatTitle']}</h3>
-                    <div class="code-block">
-                        <button class="copy-btn" onclick="copyCode(this)">${currentLang === 'zh' ? '复制' : 'Copy'}</button>
-                        <pre>${commands}</pre>
+                    <div class="install-guide">
+                        <h3>${translations[currentLang].installTitle}</h3>
+                        <div class="code-block">
+                            <button class="copy-btn" onclick="copyInstallCode()">📋</button>
+                            <pre id="install-command">
+# Linux 安装命令
+sudo apt-get install -y socat  # Debian/Ubuntu
+sudo yum install -y socat     # CentOS/RHEL
+sudo apk add socat            # Alpine</pre>
+                        </div>
                     </div>
 
-                    <h3>${translations[currentLang]['usageTitle']}</h3>
-                    <ul>
-                        <li>${translations[currentLang]['usage1']} <code class="nat-ip">${natIP}:${tcpStart}</code></li>
-                        <li>${translations[currentLang]['usage2']}</li>
-                        <li>${currentLang === 'zh' ? '推荐开启防火墙端口：' : 'Recommended firewall rules:'} 
-                            <code>ufw allow ${tcpStart}/tcp</code> 
-                            <code>ufw allow ${udpStart}/udp</code>
-                        </li>
-                    </ul>
+                    <h3>${translations[currentLang].tcpRange} <strong>${currentRanges.tcp.min}-${currentRanges.tcp.max}</strong></h3>
+                    <h3>${translations[currentLang].udpRange} <strong>${currentRanges.udp.min}-${currentRanges.udp.max}</strong></h3>
+                    
+                    <div class="custom-config">
+                        <h3>${translations[currentLang].customConfig}</h3>
+                        <div class="error-msg" id="configError"></div>
+                        
+                        <div class="protocol-select">
+                            <label>
+                                <input type="radio" name="protocol" value="tcp" checked> 
+                                ${translations[currentLang].selectProto} TCP
+                            </label>
+                            <label>
+                                <input type="radio" name="protocol" value="udp"> 
+                                UDP
+                            </label>
+                        </div>
+
+                        <div class="port-config">
+                            <div class="port-input">
+                                <label>${translations[currentLang].localPort}</label>
+                                <input type="number" id="localPort" min="1" max="65535" value="10000">
+                            </div>
+                            <div class="port-input">
+                                <label>${translations[currentLang].externalPort}</label>
+                                <input type="number" id="externalPort">
+                                <div class="port-range-hint" id="rangeHint"></div>
+                            </div>
+                        </div>
+
+                        <div class="dynamic-command">
+                            <button class="copy-btn">${translations[currentLang].copyCmd}</button>
+                            <pre id="finalCommand"></pre>
+                        </div>
+                    </div>
                 `;
 
+                // 绑定动态元素事件
+                const protocolRadios = document.querySelectorAll('input[name="protocol"]');
+                protocolRadios.forEach(radio => radio.addEventListener('change', () => {
+                    updatePortUI();
+                    validatePorts();
+                }));
+
+                document.getElementById('localPort').addEventListener('input', validatePorts);
+                document.getElementById('externalPort').addEventListener('input', validatePorts);
+                document.querySelector('.copy-btn').addEventListener('click', copyCommand);
+
+                updatePortUI();
+                validatePorts();
+
             } catch (error) {
-                resultDiv.innerHTML = `<div style="color:red;padding:10px;border-radius:4px;background:#ffe5e5;">
-                    ${currentLang === 'zh' ? '⚠️ 错误: 请输入有效的IPv6地址' : '⚠️ Error: Please enter valid IPv6 address'}
-                </div>`;
+                if(debugMode) console.error('计算错误:', error);
+                resultDiv.innerHTML = `<div style="color:red;">${
+                    currentLang === 'zh' ? '错误: 无效的IPv6地址' : 'Error: Invalid IPv6'
+                }</div>`;
             }
         }
 
-        function copyCode(button) {
-            const code = button.parentNode.querySelector('pre').innerText;
-            navigator.clipboard.writeText(code).then(() => {
-                button.textContent = currentLang === 'zh' ? '已复制!' : 'Copied!';
-                setTimeout(() => button.textContent = currentLang === 'zh' ? '复制' : 'Copy', 2000);
+        function updatePortUI() {
+            const protocol = document.querySelector('input[name="protocol"]:checked').value;
+            const range = currentRanges[protocol];
+            const externalInput = document.getElementById('externalPort');
+            
+            externalInput.min = range.min;
+            externalInput.max = range.max;
+            externalInput.value = range.min;
+
+            document.getElementById('rangeHint').innerHTML = `
+                ${translations[currentLang].validRange} 
+                <strong>${range.min}-${range.max}</strong>
+            `;
+
+            if(debugMode) console.log('更新端口UI，当前协议:', protocol);
+        }
+
+        function validatePorts() {
+            const protocol = document.querySelector('input[name="protocol"]:checked').value;
+            const localPort = parseInt(document.getElementById('localPort').value) || 0;
+            const externalPort = parseInt(document.getElementById('externalPort').value) || 0;
+            const errorElement = document.getElementById('configError');
+            let errors = [];
+
+            // 验证本地端口
+            if (localPort < 1 || localPort > 65535) {
+                errors.push(translations[currentLang].localPort);
+            }
+
+            // 验证外部端口
+            if (externalPort < currentRanges[protocol].min || 
+                externalPort > currentRanges[protocol].max) {
+                errors.push(translations[currentLang].externalPort);
+            }
+
+            // 显示错误信息
+            if (errors.length > 0) {
+                errorElement.textContent = translations[currentLang].invalidPort + errors.join(', ');
+                errorElement.style.display = 'block';
+                document.getElementById('finalCommand').textContent = '';
+            } else {
+                errorElement.style.display = 'none';
+                generateCommand();
+            }
+
+            if(debugMode) console.log('端口验证结果:', {localPort, externalPort, errors});
+        }
+
+        function generateCommand() {
+            const protocol = document.querySelector('input[name="protocol"]:checked').value;
+            const localPort = document.getElementById('localPort').value;
+            const externalPort = document.getElementById('externalPort').value;
+            const ipv6 = document.getElementById('ipv6').value.trim();
+
+            const command = `socat ${protocol.toUpperCase()}4-LISTEN:${localPort},reuseaddr,fork ${protocol.toUpperCase()}6:[${ipv6}]:${externalPort}`;
+            document.getElementById('finalCommand').textContent = command;
+
+            if(debugMode) console.log('生成的命令:', command);
+        }
+
+        function copyCommand() {
+            const command = document.getElementById('finalCommand').textContent;
+            if (!command) return;
+            
+            navigator.clipboard.writeText(command).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = currentLang === 'zh' ? '✅ 已复制' : '✅ Copied';
+                setTimeout(() => {
+                    btn.textContent = translations[currentLang].copyCmd;
+                }, 2000);
             });
         }
 
-        // 初始化配置
+        function copyInstallCode() {
+            const code = document.getElementById('install-command').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.querySelector('.install-guide .copy-btn');
+                btn.textContent = currentLang === 'zh' ? '✅ 已复制' : '✅ Copied';
+                setTimeout(() => {
+                    btn.textContent = '📋';
+                }, 2000);
+            });
+        }
+
+        // 初始化中文界面
         changeLanguage('zh');
     </script>
 </body>
