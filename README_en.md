@@ -5,6 +5,9 @@
 
 English | [中文文档](README.md)
 
+## 🚀 Live Demo
+👉 **[Try it now!](http://cs-ipv6-nat-toolkit.github.pcbbs.net/)** 👈
+
 ## 🚀 Key Features
 - **Smart Port Calculator**  
   Automatically calculates TCP/UDP port ranges based on IPv6 hexadecimal values
@@ -81,4 +84,3 @@ MIT Licensed - See [LICENSE](LICENSE)
 
 ## 🖼️ UI Preview
 ![Tool Interface](docs/preview.png)
-
